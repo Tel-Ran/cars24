@@ -55,6 +55,7 @@ Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
 		assertEquals(RENT_DATE1,record1.getRentDate());
 		assertEquals(null,record1.getReturnDate());
 		assertEquals(RENT_DAYS1,record1.getRentDays());
+		assertTrue(car1.isInUse());
 		
 	}
 	private RentRecord getRecord(String regNumber1) {
@@ -92,5 +93,6 @@ Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
 		assertEquals(null,company.getDriver(LICENSE2));
 		assertEquals(driver1,company.getDriver(LICENSE1));
 	}
+	
 
 }

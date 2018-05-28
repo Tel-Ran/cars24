@@ -2,6 +2,7 @@ package telran.cars.model;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -59,8 +60,47 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 
 	@Override
 	public CarsReturnCode rentCar(String carNumber, long licenseId, LocalDate rentDate, int rentDays) {
-		// TODO Auto-generated method stub
-		return null;
+		CarsReturnCode code=checkRentCar(carNumber,licenseId);
+		if(code==CarsReturnCode.OK) {
+			RentRecord record=new RentRecord(licenseId, carNumber,
+					rentDate, rentDays);
+			addCarRecords(record);
+			addDriverRecords(record);
+			setInUse(record);
+		}
+		return code;
+	}
+
+	private void addDriverRecords(RentRecord record) {
+		long licenseId=record.getLicenseId();
+		List<RentRecord>records=driverRecords.get(licenseId);
+		if(records==null) {
+			records=new LinkedList<>();
+			driverRecords.put(licenseId, records);
+		}
+		records.add(record);
+		
+	}
+
+	private void addCarRecords(RentRecord record) {
+		String regNumber=record.getCarNumber();
+		List<RentRecord> records=carRecords.get(regNumber);
+		if(records==null) {
+			records=new LinkedList<>();
+			carRecords.put(regNumber, records);
+		}
+		records.add(record);
+	}
+
+	private CarsReturnCode checkRentCar(String carNumber, long licenseId) {
+		Car car=getCar(carNumber);
+		if(car==null || car.isFlRemoved())
+			return CarsReturnCode.NO_CAR;
+		if(car.isInUse())
+			return CarsReturnCode.CAR_IN_USE;
+		if(getDriver(licenseId)==null)
+			return CarsReturnCode.NO_DRIVER;
+		return CarsReturnCode.OK;
 	}
 
 	@Override

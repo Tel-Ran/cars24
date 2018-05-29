@@ -30,9 +30,10 @@ public interface IRentCompany {
 	//all drivers that have been renting the car
 	List<Car> getDriverCars(long licenseId); //returns list of 
 	//all cars that have been rented by the driver
+	Stream<RentRecord> getAllRecords();
 	Stream<Car> getAllCars();
 	Stream<Driver> getAllDrivers();
-	Stream<RentRecord> getAllRecords();
+	
 	List<String> getAllModelNames();
 	List<String> getMostPopularModelNames(); //returns list of
 	// the model names the cars of which have been rented most times

@@ -93,6 +93,17 @@ Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
 		assertEquals(null,company.getDriver(LICENSE2));
 		assertEquals(driver1,company.getDriver(LICENSE1));
 	}
-	
+	@Test
+	public void getAllRecords() {
+		//TODO
+	}
+	@Test
+	public void getCarDrivers() {
+		//TODO
+	}
+	@Test
+	public void getDriverCars() {
+		//TODO
+	}
 
 }

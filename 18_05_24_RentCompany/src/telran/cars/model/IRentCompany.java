@@ -17,7 +17,7 @@ public interface IRentCompany {
 	    
 	CarsReturnCode returnCar(String carNumber,long licenseId,
 	LocalDate returnDate,int gasTankPercent,
-	      int  damages);//(OK,NO_DRIVER,CAR_NOT_RENTED,
+	      int  damages);//(OK,CAR_NOT_RENTED,
 	      // RETURN_DATE_WRONG) In the case of damages up to 10% state is GOOD, 
 	       // up to 30% state BAD more than 30% - remove car (flRemoved)
 	CarsReturnCode removeCar(String carNumber);//(OK,CAR_IN_USE,CAR_NOT_EXISTS)

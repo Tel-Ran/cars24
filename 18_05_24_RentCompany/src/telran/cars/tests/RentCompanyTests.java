@@ -13,11 +13,18 @@ private static final String REG_NUMBER1 = "123";
 private static final String REG_NUMBER2 = "124";
 private static final String MODEL1 = "BMW12";
 private static final String MODEL2 = "B4";
-private static final String REG_NUMBER3 = "124";
+private static final String REG_NUMBER3 = "125";
 private static final long LICENSE1 = 123;
 private static final long LICENSE2 = 124;
 private static final LocalDate RENT_DATE1 = LocalDate.parse("2018-05-28");
 private static final int RENT_DAYS1 = 5;
+private static final LocalDate RETURN_DATE = RENT_DATE1.plusDays(RENT_DAYS1);
+private static final LocalDate WRONG_RETURN_DATE = RENT_DATE1.minusDays(1);
+private static final long DELAY_DAYS = 2;
+private static final LocalDate RETURN_DATE_DELAY = RETURN_DATE.plusDays(DELAY_DAYS);
+private static final int GAS_PERCENT = 50;
+private static final int DAMAGES = 60;
+
 IRentCompany company;
 Car car1=new Car(REG_NUMBER1, "red", MODEL1);
 Car car2=new Car(REG_NUMBER2, "green", MODEL2);
@@ -104,6 +111,43 @@ RentRecord recordRent=new RentRecord
 	public void getDriverCars() {
 		company.getDriverCars(LICENSE1)
 		.forEach(c->assertEquals(car1,c));
+	}
+	@Test
+	public void returnCarCodes() {
+		assertEquals(CarsReturnCode.CAR_NOT_RENTED,
+		company.returnCar(REG_NUMBER2, LICENSE1, RETURN_DATE, 100, 0));
+		assertEquals(CarsReturnCode.CAR_NOT_RENTED,
+				company.returnCar(REG_NUMBER1, LICENSE2, RETURN_DATE, 100, 0));
+		assertEquals(CarsReturnCode.RETURN_DATE_WRONG,
+		company.returnCar(REG_NUMBER1, LICENSE1, WRONG_RETURN_DATE, 100, 0));
+		assertEquals(CarsReturnCode.OK,
+				company.returnCar(REG_NUMBER1, LICENSE1, RETURN_DATE, 100, 0));
+	}
+	@Test
+	public void returCarNoDamagesNoAdditionalCost () {
+		company.returnCar(REG_NUMBER1, LICENSE1, RETURN_DATE, 100, 0);
+		assertFalse(car1.isInUse());
+		assertEquals(car1.getState(),State.EXCELLENT);
+		assertFalse(car1.isFlRemoved());
+		recordRent.setGasTankPercent(100);
+		recordRent.setReturnDate(RETURN_DATE);
+		recordRent.setCost(RENT_DAYS1*model1.getPriceDay());
+		RentRecord record=getRecord(REG_NUMBER1);
+		assertEquals(recordRent,record);
+	}
+	@Test
+	public void returnCarWithDamagesAdditionalCost() {
+		company.returnCar(REG_NUMBER1,LICENSE1,RETURN_DATE_DELAY,GAS_PERCENT,DAMAGES);
+		assertFalse(car1.isInUse());
+		assertTrue(car1.isFlRemoved());
+		recordRent.setGasTankPercent(GAS_PERCENT);
+		recordRent.setDamages(DAMAGES);
+		recordRent.setReturnDate(RETURN_DATE_DELAY);
+		recordRent.setCost(RENT_DAYS1*model1.getPriceDay()+getAdditionaCost());
+	}
+	private int getAdditionaCost() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

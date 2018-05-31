@@ -26,7 +26,8 @@ Model model1=new Model(MODEL1, 55, "BMW", "Germany", 200);
 Model model2=new Model(MODEL2, 50, "Subaru", "Japan", 190);
 Driver driver1=new Driver(LICENSE1, "Moshe", 1980, "050-1234567");
 Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
-
+RentRecord recordRent=new RentRecord
+(LICENSE1, REG_NUMBER1, RENT_DATE1, RENT_DAYS1);
 
 	@BeforeEach
 	public void setUp() throws Exception {
@@ -51,10 +52,7 @@ Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
 				(REG_NUMBER2, LICENSE1, RENT_DATE1, RENT_DAYS1));
 		RentRecord record1=getRecord(REG_NUMBER1);
 		assertEquals(LICENSE1,record1.getLicenseId());
-		assertEquals(REG_NUMBER1,record1.getCarNumber());
-		assertEquals(RENT_DATE1,record1.getRentDate());
-		assertEquals(null,record1.getReturnDate());
-		assertEquals(RENT_DAYS1,record1.getRentDays());
+		assertEquals(recordRent,record1);
 		assertTrue(car1.isInUse());
 		
 	}
@@ -95,15 +93,17 @@ Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
 	}
 	@Test
 	public void getAllRecords() {
-		//TODO
+		company.getAllRecords().forEach(r->assertEquals(recordRent, r));
 	}
 	@Test
 	public void getCarDrivers() {
-		//TODO
+		company.getCarDrivers(REG_NUMBER1)
+		.forEach(d->assertEquals(driver1,d));
 	}
 	@Test
 	public void getDriverCars() {
-		//TODO
+		company.getDriverCars(LICENSE1)
+		.forEach(c->assertEquals(car1,c));
 	}
 
 }

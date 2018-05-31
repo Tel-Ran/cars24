@@ -1,10 +1,13 @@
 package telran.cars.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import telran.cars.dto.Car;
@@ -71,6 +74,12 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 		return code;
 	}
 
+	private void setInUse(RentRecord record) {
+		Car car=cars.get(record.getCarNumber());
+		car.setInUse(true);
+		
+	}
+
 	private void addDriverRecords(RentRecord record) {
 		long licenseId=record.getLicenseId();
 		List<RentRecord>records=driverRecords.get(licenseId);
@@ -124,14 +133,20 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 
 	@Override
 	public List<Driver> getCarDrivers(String carNumber) {
-		// TODO Auto-generated method stub
-		return null;
+		List<RentRecord> records=carRecords.get(carNumber);
+		return records==null?new ArrayList<>()
+				:records.stream()
+				.map(x->getDriver(x.getLicenseId()))
+				.distinct().collect(Collectors.toList());
 	}
 
 	@Override
 	public List<Car> getDriverCars(long licenseId) {
-		// TODO Auto-generated method stub
-		return null;
+		List<RentRecord> records=driverRecords.get(licenseId);
+		return records==null?new ArrayList<>()
+				:records.stream()
+				.map(x->getCar(x.getCarNumber()))
+				.distinct().collect(Collectors.toList());
 	}
 
 	@Override
@@ -148,8 +163,9 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 
 	@Override
 	public Stream<RentRecord> getAllRecords() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return carRecords.values().stream()
+				.flatMap(Collection::stream);
 	}
 
 	@Override

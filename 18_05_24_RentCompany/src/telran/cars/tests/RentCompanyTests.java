@@ -1,5 +1,5 @@
 package telran.cars.tests;
-
+import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
@@ -24,6 +24,11 @@ private static final long DELAY_DAYS = 2;
 private static final LocalDate RETURN_DATE_DELAY = RETURN_DATE.plusDays(DELAY_DAYS);
 private static final int GAS_PERCENT = 50;
 private static final int DAMAGES = 60;
+private static final LocalDate CURRENT_DATE = LocalDate.ofYearDay(2019, 10);
+private static final int CLEAR_DAYS = 50;
+private static final String MODEL_SUPER = "Ferrary";
+private static final int SUPER_PRICE = 100000;
+private static final String REG_NUMBER_SUPER = "12345";
 
 IRentCompany company;
 Car car1=new Car(REG_NUMBER1, "red", MODEL1);
@@ -35,6 +40,7 @@ Driver driver1=new Driver(LICENSE1, "Moshe", 1980, "050-1234567");
 Driver driver2=new Driver(LICENSE2,"David",1960,"050-7654321");
 RentRecord recordRent=new RentRecord
 (LICENSE1, REG_NUMBER1, RENT_DATE1, RENT_DAYS1);
+private Car carSuper=new Car(REG_NUMBER_SUPER, "white", MODEL_SUPER);
 
 	@BeforeEach
 	public void setUp() throws Exception {
@@ -154,6 +160,78 @@ RentRecord recordRent=new RentRecord
 		int priceDay=model1.getPriceDay();
 		return (gasTank-GAS_PERCENT*gasTank/100)*gasPrice+
 				DELAY_DAYS*(priceDay+finePerDay*priceDay/100);
+	}
+	@Test
+	public void removeCar() {
+		assertEquals(CarsReturnCode.CAR_IN_USE,
+				company.removeCar(REG_NUMBER1));
+		assertEquals(CarsReturnCode.NO_CAR,
+				company.removeCar(REG_NUMBER2));
+		company.returnCar
+		(REG_NUMBER1, LICENSE1, RETURN_DATE,
+				100, 0);
+		assertEquals(CarsReturnCode.OK,
+				company.removeCar(REG_NUMBER1));
+		assertTrue(car1.isFlRemoved());
+	}
+	@Test
+	public void clear() {
+		setUpClear();
+		//assumed car1 and car2 are deleted ; car3 is not deleted
+		List<Car> carsActual=company.clear(CURRENT_DATE, CLEAR_DAYS);
+		Car[]carsExpected= {car1,car2};
+		carsActual.sort((x,y)->x.getRegNumber().compareTo(y.getRegNumber()));
+		assertArrayEquals(carsExpected, carsActual.toArray());
+		assertNull(company.getCar(REG_NUMBER1));
+		assertNull(company.getCar(REG_NUMBER2));
+		assertNull(getRecord(REG_NUMBER1));
+		assertNull(getRecord(REG_NUMBER2));
+		assertNotNull(company.getCar(REG_NUMBER3));
+		assertNotNull(getRecord(REG_NUMBER3));
+		
+		
+		
+	}
+	private void setUpClear() {
+		company.returnCar
+		(REG_NUMBER1, LICENSE1, RETURN_DATE, 0, 90);
+		company.addCar(car2);
+		company.addCar(car3);
+		company.rentCar(REG_NUMBER2, LICENSE1, RENT_DATE1, RENT_DAYS1);
+		company.rentCar(REG_NUMBER3, LICENSE1, RENT_DATE1, RENT_DAYS1);
+		company.returnCar
+		(REG_NUMBER2, LICENSE1, RETURN_DATE, 100, 0);
+		company.removeCar(REG_NUMBER2);
+		company.returnCar
+		(REG_NUMBER3, LICENSE1, RETURN_DATE, 100, 0);
+		
+		
+	}
+	@Test
+	public void mostPopularModels() {
+		setUpStatics();
+		//assumed model1 and model2 most popular
+		List<String> actualModels=company.getMostPopularModelNames();
+		String expectedModels[]= {MODEL1,MODEL2};
+		actualModels.sort(String::compareTo);
+		assertArrayEquals(expectedModels, actualModels.toArray());
+	}
+	private void setUpStatics() {
+		company.returnCar
+		(REG_NUMBER1, LICENSE1, RETURN_DATE, 100, 0);
+		rentReturn(REG_NUMBER1,2);
+		rentReturn(REG_NUMBER2,3);
+		company.addModel(new Model(MODEL_SUPER, 100, "FEAT", "ITALY", SUPER_PRICE));
+		company.addCar(carSuper);
+		rentReturn(carSuper.getRegNumber(),1);
+		
+	}
+	private void rentReturn(String regNumber, int n) {
+		for (int i=0;i<n;i++) {
+			company.rentCar(regNumber, LICENSE1, RENT_DATE1, RENT_DAYS1);
+			company.returnCar(regNumber, LICENSE1, RETURN_DATE, 100, 0);
+		}
+		
 	}
 
 }

@@ -62,6 +62,7 @@ RentRecord recordRent=new RentRecord
 		assertEquals(recordRent,record1);
 		assertTrue(car1.isInUse());
 		
+		
 	}
 	private RentRecord getRecord(String regNumber1) {
 		return company.getAllRecords().filter(x->x.getCarNumber()
@@ -145,9 +146,14 @@ RentRecord recordRent=new RentRecord
 		recordRent.setReturnDate(RETURN_DATE_DELAY);
 		recordRent.setCost(RENT_DAYS1*model1.getPriceDay()+getAdditionaCost());
 	}
-	private int getAdditionaCost() {
-		// TODO Auto-generated method stub
-		return 0;
+	private float getAdditionaCost() {
+		
+		int gasPrice=((AbstractRentCompany)company).getGasPrice();
+		int finePerDay=((AbstractRentCompany)company).getFinePercent();
+		int gasTank=model1.getGasTank();
+		int priceDay=model1.getPriceDay();
+		return (gasTank-GAS_PERCENT*gasTank/100)*gasPrice+
+				DELAY_DAYS*(priceDay+finePerDay*priceDay/100);
 	}
 
 }

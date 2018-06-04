@@ -1,6 +1,7 @@
 package telran.cars.model;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import telran.cars.dto.CarsReturnCode;
 import telran.cars.dto.Driver;
 import telran.cars.dto.Model;
 import telran.cars.dto.RentRecord;
+import telran.cars.dto.State;
 
 @SuppressWarnings("serial")
 public class RentCompanyEmbedded extends AbstractRentCompany {
@@ -113,11 +115,97 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 	}
 
 	@Override
-	public CarsReturnCode returnCar(String carNumber, long licenseId, LocalDate returnDate, int gasTankPercent,
-			int damages) {
-		// TODO Auto-generated method stub
-		return null;
+	public CarsReturnCode returnCar(String carNumber, long licenseId,
+			LocalDate returnDate, int gasTankPercent,int damages) {
+			RentRecord record=getRentRecord(carNumber,licenseId);
+			if(record==null)
+				return CarsReturnCode.CAR_NOT_RENTED;
+			if(returnDate.isBefore(record.getRentDate()))
+				return CarsReturnCode.RETURN_DATE_WRONG;
+			updateRecord(returnDate, gasTankPercent, damages, record);
+			Car car=cars.get(carNumber);
+			if(car==null || car.isFlRemoved() || !car.isInUse())
+				throw new RuntimeException
+				("Information model inconsistency (the record exists but car doesn't)");
+			setCost(record,car);
+			updateCarData(damages, car);
+			addReturnedRecords(record);
+			return CarsReturnCode.OK;
+		}
+
+	private RentRecord getRentRecord(String carNumber, long licenseId) {
+		List<RentRecord> records=driverRecords.get(licenseId);
+		return records==null?null:records.stream()
+				.filter(r->r.getCarNumber().equals(carNumber)&&r.getReturnDate()==null)
+				.findFirst().orElse(null);
 	}
+
+	private void updateRecord(LocalDate returnDate, int gasTankPercent, int damages, RentRecord record) {
+		record.setDamages(damages);
+		record.setGasTankPercent(gasTankPercent);
+		record.setReturnDate(returnDate);
+	}
+
+		private void addReturnedRecords(RentRecord record) {
+			LocalDate returnDate=record.getReturnDate();
+			List<RentRecord>records=returnedRecords.get(returnDate);
+			if(records==null){
+				records=new ArrayList<>();
+				returnedRecords.put(returnDate, records);
+			}
+			records.add(record);
+			
+		}
+
+		private void updateCarData(int damages, Car car) {
+			if(damages>0 && damages<10)
+				car.setState(State.GOOD);
+			else if(damages>=10&&damages<30)
+				car.setState(State.BAD);
+			else if(damages>=30)
+				car.setFlRemoved(true);
+			car.setInUse(false);
+		}
+
+		private void setCost(RentRecord record, Car car) {
+			long period=ChronoUnit.DAYS.between
+					(record.getRentDate(), record.getReturnDate());
+			float costPeriod=0;
+			Model model=getModel(car.getModelName());
+			if(model==null)
+				throw new RuntimeException("Information model inconsistency (the car exists but model doesn't)");
+			float costGas=0;
+			costPeriod = getCostPeriod(record, period, model);
+			costGas = getCostGas(record, model);
+			record.setCost(costPeriod+costGas);
+			
+		}
+		private float getCostGas(RentRecord record, Model model) {
+			float costGas;
+			int gasTank=model.getGasTank();
+			float litersCost=(float)(100-record.getGasTankPercent())*gasTank/100;
+			costGas=litersCost*getGasPrice();
+			return costGas;
+		}
+		private float getCostPeriod(RentRecord record, long period, Model model) {
+			float costPeriod;
+			long delta=period-record.getRentDays();
+			float additionalPeriodCost=0;
+			int pricePerDay=model.getPriceDay();
+			int rentDays=record.getRentDays();
+			if(delta>0){
+				additionalPeriodCost=getAdditionalPeriodCost
+						(pricePerDay,delta);
+			}
+			costPeriod=rentDays*pricePerDay+additionalPeriodCost;
+			return costPeriod;
+		}
+
+		private float getAdditionalPeriodCost(int pricePerDay, long delta) {
+			float fineCostPerDay=pricePerDay*getFinePercent()/100;
+			return (pricePerDay+fineCostPerDay)*delta;
+		}
+
 
 	@Override
 	public CarsReturnCode removeCar(String carNumber) {

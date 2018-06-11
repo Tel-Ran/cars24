@@ -2,12 +2,8 @@ package telran.cars.model;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
+
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -210,14 +206,58 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 
 	@Override
 	public CarsReturnCode removeCar(String carNumber) {
-		// TODO Auto-generated method stub
-		return null;
+		Car car=cars.get(carNumber);
+		if(car==null)
+			return CarsReturnCode.NO_CAR;
+		if(car.isInUse())
+			return CarsReturnCode.CAR_IN_USE;
+		car.setFlRemoved(true);
+		return CarsReturnCode.OK;
 	}
 
 	@Override
 	public List<Car> clear(LocalDate currentDate, int days) {
-		// TODO Auto-generated method stub
-		return null;
+		Set<RentRecord> recordsForRemove=
+				getRecordsForRemove(currentDate.minusDays(days));
+		removeDriverRecords(recordsForRemove);
+		List<Car>res=getCarsForRemove(recordsForRemove);
+		return res;
+	}
+	private List<Car> getCarsForRemove(Set<RentRecord> recordsForRemove) {
+		List<Car> res=new ArrayList<>();
+		 recordsForRemove.stream()
+				.map(r->cars.get(r.getCarNumber()))
+				.distinct()
+				.forEach(c->{
+					res.add(c);
+					cars.remove(c.getRegNumber());
+				});
+		 return res;
+	}
+
+	private void removeDriverRecords(Set<RentRecord> recordsForRemove) {
+		recordsForRemove.stream().mapToLong(RentRecord::getLicenseId)
+		.distinct().forEach(id->driverRecords.get(id)
+				.removeIf(recordsForRemove::contains));
+		
+	}
+
+	private Set<RentRecord> getRecordsForRemove(LocalDate beforeDate) {
+		Set<RentRecord> res=new HashSet<>();
+		returnedRecords.headMap(beforeDate).values()
+		.forEach(r->{
+			Iterator<RentRecord> it=r.iterator();
+			while(it.hasNext()) {
+				RentRecord record=it.next();
+				Car car=cars.get(record.getCarNumber());
+				if(car.isFlRemoved()) {
+					res.add(record);
+					carRecords.remove(car.getRegNumber());
+					it.remove();
+				}
+			}
+		});
+		return res;
 	}
 
 	@Override
@@ -240,14 +280,12 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 
 	@Override
 	public Stream<Car> getAllCars() {
-		// TODO Auto-generated method stub
-		return null;
+		return cars.values().stream();
 	}
 
 	@Override
 	public Stream<Driver> getAllDrivers() {
-		// TODO Auto-generated method stub
-		return null;
+		return drivers.values().stream();
 	}
 
 	@Override
@@ -259,26 +297,48 @@ public class RentCompanyEmbedded extends AbstractRentCompany {
 
 	@Override
 	public List<String> getAllModelNames() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return models.values().stream().map(Model::getModelName)
+				.collect(Collectors.toList());
 	}
 
 	@Override
 	public List<String> getMostPopularModelNames() {
-		// TODO Auto-generated method stub
-		return null;
+		Map<String,Long> modelOccurrences=
+		carRecords.values().stream()
+		.flatMap(List::stream)
+		.collect(Collectors.groupingBy(this::getModelNameFromRecord,
+				Collectors.counting()));
+		long maxOccurrences=modelOccurrences.values().stream()
+				.max(Long::compare).orElse(0l);
+		
+		return modelOccurrences.entrySet().stream()
+				.filter(x->x.getValue()==maxOccurrences)
+				.map(x->x.getKey()).collect(Collectors.toList());
 	}
-
+private String getModelNameFromRecord(RentRecord record) {
+	return cars.get(record.getCarNumber()).getModelName();
+}
 	@Override
 	public double getModelProfit(String modelName) {
-		// TODO Auto-generated method stub
-		return 0;
+		
+		return carRecords.values().stream().flatMap(List::stream)
+				.filter(r->getModelNameFromRecord(r).equals(modelName))
+				.collect(Collectors
+						.summingDouble(RentRecord::getCost));
 	}
 
 	@Override
 	public List<String> getMostProfitModelNames() {
-		// TODO Auto-generated method stub
-		return null;
+		Map<String,Double> modelOccurrences=
+		carRecords.values().stream().flatMap(List::stream)
+		.collect(Collectors.groupingBy(this::getModelNameFromRecord,
+			Collectors.summingDouble(RentRecord::getCost)));
+		double maxCost=modelOccurrences.values().stream()
+				.max(Double::compare).orElse(0.0);
+		return modelOccurrences.entrySet().stream()
+				.filter(x->Double.compare(x.getValue(), maxCost)==0)
+				.map(x->x.getKey()).collect(Collectors.toList());
 	}
 
 }

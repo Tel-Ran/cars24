@@ -72,7 +72,7 @@ private Car carSuper=new Car(REG_NUMBER_SUPER, "white", MODEL_SUPER);
 	}
 	private RentRecord getRecord(String regNumber1) {
 		return company.getAllRecords().filter(x->x.getCarNumber()
-				.equals(regNumber1)).findFirst().get();
+				.equals(regNumber1)).findFirst().orElse(null);
 	}
 	@Test
 	public void addCar() {
@@ -195,6 +195,7 @@ private Car carSuper=new Car(REG_NUMBER_SUPER, "white", MODEL_SUPER);
 	private void setUpClear() {
 		company.returnCar
 		(REG_NUMBER1, LICENSE1, RETURN_DATE, 0, 90);
+		company.addModel(model2);
 		company.addCar(car2);
 		company.addCar(car3);
 		company.rentCar(REG_NUMBER2, LICENSE1, RENT_DATE1, RENT_DAYS1);
@@ -208,19 +209,60 @@ private Car carSuper=new Car(REG_NUMBER_SUPER, "white", MODEL_SUPER);
 		
 	}
 	@Test
+	public void getAllCars() {
+		Car[]expected= {car1,car3};
+		company.addCar(car3);
+		assertArrayEquals(expected,company.getAllCars()
+				.sorted((c1,c2)->
+				c1.getRegNumber().compareTo(c2.getRegNumber())).toArray());
+	}
+	@Test
+	public void getAllDrivers() {
+		Driver[]expected= {driver1,driver2};
+		company.addDriver(driver2);
+		assertArrayEquals(expected,company.getAllDrivers()
+				.sorted((d1,d2)->
+				Long.compare(d1.getLicenseId(), d2.getLicenseId())).toArray());
+	}
+	@Test
+	public void getModelNames() {
+		String[]expected= {MODEL2,MODEL1};
+		company.addModel(model2);
+		List<String>actual=company.getAllModelNames();
+		actual.sort(String::compareTo);
+		assertArrayEquals(expected,actual.toArray());
+	}
+	@Test
 	public void mostPopularModels() {
 		setUpStatics();
-		//assumed model1 and model2 most popular
+		//assumed model2 and model1 most popular
 		List<String> actualModels=company.getMostPopularModelNames();
-		String expectedModels[]= {MODEL1,MODEL2};
+		String expectedModels[]= {MODEL2,MODEL1};//B4 less than BMW12
 		actualModels.sort(String::compareTo);
 		assertArrayEquals(expectedModels, actualModels.toArray());
+	}
+	@Test
+	public void getProfit() {
+		setUpStatics();
+		assertEquals(200*5*3,company.getModelProfit(MODEL1));
+		assertEquals(190*5*3,company.getModelProfit(MODEL2));
+		assertEquals(SUPER_PRICE*5*1,company.getModelProfit(MODEL_SUPER));
+	}
+	@Test
+	public void mostProfitModel() {
+		setUpStatics();
+		String []expected= {MODEL_SUPER};
+		List<String> actual=company.getMostProfitModelNames();
+		assertArrayEquals(expected, actual.toArray());
 	}
 	private void setUpStatics() {
 		company.returnCar
 		(REG_NUMBER1, LICENSE1, RETURN_DATE, 100, 0);
 		rentReturn(REG_NUMBER1,2);
+		company.addModel(model2);
+		company.addCar(car2);
 		rentReturn(REG_NUMBER2,3);
+		
 		company.addModel(new Model(MODEL_SUPER, 100, "FEAT", "ITALY", SUPER_PRICE));
 		company.addCar(carSuper);
 		rentReturn(carSuper.getRegNumber(),1);
@@ -233,5 +275,6 @@ private Car carSuper=new Car(REG_NUMBER_SUPER, "white", MODEL_SUPER);
 		}
 		
 	}
+	
 
 }

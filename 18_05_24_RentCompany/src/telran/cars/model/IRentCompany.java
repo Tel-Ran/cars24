@@ -41,6 +41,6 @@ public interface IRentCompany {
 	//the renting cars of a given model name
 	List<String> getMostProfitModelNames(); //returns list of most
 	//proftable model names
-
+	void save();
 
 }

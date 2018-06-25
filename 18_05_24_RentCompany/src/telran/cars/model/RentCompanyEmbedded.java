@@ -3,7 +3,7 @@ package telran.cars.model;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
+import java.io.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,12 +17,37 @@ import telran.cars.dto.State;
 
 @SuppressWarnings("serial")
 public class RentCompanyEmbedded extends AbstractRentCompany {
+	private static final String DEFAULT_FILE_NAME = "company.data";
 	private HashMap<String,Car> cars=new HashMap<>();
 	private HashMap<Long,Driver> drivers=new HashMap<>();
 	private HashMap<String,List<RentRecord>> carRecords=new HashMap<>();
 	private HashMap<Long,List<RentRecord>> driverRecords=new HashMap<>();
 	private HashMap<String,Model> models=new HashMap<>();
 	private TreeMap<LocalDate,List<RentRecord>> returnedRecords=new TreeMap<>();
+	private String fileName;
+	public String getFileName() {
+		return fileName;
+	}
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+	private RentCompanyEmbedded() {
+		
+	}
+	public static RentCompanyEmbedded restoreFromFile() {
+		return restoreFromFile(DEFAULT_FILE_NAME);
+	}
+	public static RentCompanyEmbedded restoreFromFile(String fileName) {
+		RentCompanyEmbedded company;
+		try (ObjectInputStream input=
+				new ObjectInputStream(new FileInputStream(fileName))){
+			company=(RentCompanyEmbedded) input.readObject();
+		}catch (Exception e) {
+			company=new RentCompanyEmbedded();
+		}
+		company.setFileName(fileName);
+		return company;
+	}
 	@Override
 	public CarsReturnCode addModel(Model model) {
 		return models.putIfAbsent(model.getModelName(), model)==null?
@@ -339,6 +364,16 @@ private String getModelNameFromRecord(RentRecord record) {
 		return modelOccurrences.entrySet().stream()
 				.filter(x->Double.compare(x.getValue(), maxCost)==0)
 				.map(x->x.getKey()).collect(Collectors.toList());
+	}
+	@Override
+	public void save() {
+		try(ObjectOutputStream output=
+				new ObjectOutputStream(
+						new FileOutputStream(fileName))){
+			output.writeObject(this);
+		}catch (Exception e) {
+			System.out.println("Error writing to file "+e.getMessage());
+		}
 	}
 
 }

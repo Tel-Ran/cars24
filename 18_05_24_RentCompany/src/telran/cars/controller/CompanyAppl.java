@@ -6,7 +6,7 @@ import telran.cars.controller.items.*;
 import telran.cars.model.*;
 public class CompanyAppl {
 	static InputOutput inputOutput=new ConsoleInputOutput();
-	static IRentCompany company=new RentCompanyEmbedded();
+	static IRentCompany company=RentCompanyEmbedded.restoreFromFile("companytest.data");
 	public static void main(String[] args) {
 		
 		Item[]menuItems= getMenuItems();
@@ -20,7 +20,8 @@ public class CompanyAppl {
 			new Clerk(inputOutput, company, getClerkItems()),
 			new Statist(inputOutput, company, getStatistItems()),
 			new User(inputOutput, company, getUserItems()),
-			new Technician(inputOutput, company, getTechnicianItems())
+			new Technician(inputOutput, company, getTechnicianItems()),
+			new ExitAndSave(inputOutput, company)
 		};
 		return items;
 	}

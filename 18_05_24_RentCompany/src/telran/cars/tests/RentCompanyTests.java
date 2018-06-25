@@ -3,7 +3,9 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
-
+import java.io.*;
+import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import telran.cars.model.*;
@@ -29,8 +31,9 @@ private static final int CLEAR_DAYS = 50;
 private static final String MODEL_SUPER = "Ferrary";
 private static final int SUPER_PRICE = 100000;
 private static final String REG_NUMBER_SUPER = "12345";
-
-IRentCompany company;
+private static final String TEST_FILE_NAME = "companytest.data";
+static File testFile=new File(TEST_FILE_NAME);
+static IRentCompany company;
 Car car1=new Car(REG_NUMBER1, "red", MODEL1);
 Car car2=new Car(REG_NUMBER2, "green", MODEL2);
 Car car3=new Car(REG_NUMBER3,"silver",MODEL1);
@@ -44,13 +47,22 @@ private Car carSuper=new Car(REG_NUMBER_SUPER, "white", MODEL_SUPER);
 
 	@BeforeEach
 	public void setUp() throws Exception {
-		company=new RentCompanyEmbedded();
+		company=RentCompanyEmbedded.restoreFromFile(TEST_FILE_NAME);
+		if(!testFile.exists()) {
 		company.addModel(model1);
 		company.addDriver(driver1);
 		company.addCar(car1);
 		company.rentCar(REG_NUMBER1, LICENSE1, RENT_DATE1,
 				RENT_DAYS1);
+		company.save();
+		}
+		else {
+			
+			car1=company.getCar(REG_NUMBER1);
+		}
+		
 	}
+	
 	@Test
 	public void rentCar() {
 		assertEquals(CarsReturnCode.CAR_IN_USE,
